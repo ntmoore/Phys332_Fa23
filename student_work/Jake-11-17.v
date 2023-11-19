@@ -1,5 +1,5 @@
 `timescale 1ns / 1ps
-module clk_1kHz_1ms(
+module clk_1kHz(
     input incoming_CLK100MHZ,
     output reg outgoing_CLK
     );
@@ -27,17 +27,17 @@ module clk_50Hz(
     output reg outgoing_CLK
     );
 
-    // creates 10HZ clock from a 100MHZ clock
-    // 10HZ clock has a period of 0.1 second = 100ms
-    // 100MHz / 5Hz => (100 * (1000) * (1000)) / 20 = 2,000,000 cycles
-    // log2(10,000,000) = 23.2, so 24 bits needed for counter
-    reg [23:0] ctr;
+    // creates 50HZ clock from a 100MHZ clock
+    // 50HZ clock has a period of 0.02 second = 20ms
+    // 100MHz / 50Hz => (100 * (1000) * (1000)) / 50 = 2 000 000 cycles
+    // log2(2 000 000) ~= 21
+    reg [32:0] ctr; // more than big enough
 
     always @ (posedge incoming_CLK100MHZ) begin
-        if (ctr == 10_000_000) begin
+        if (ctr == 1_000_000) begin
             outgoing_CLK <= 1'b1;
             ctr <= ctr + 1;            
-        end else if (ctr == 19_999_999) begin
+        end else if (ctr == 1_999_999) begin
             outgoing_CLK <= 1'b0;
             ctr <= 0;
         end else begin
@@ -59,7 +59,8 @@ module count_button_push(
             sum_out <= 0;
         end else if (button==1) begin
             sum_out <= sum_out + 1'b1;
-        end        
+        end
+        // implicitly, if no button or clear, nothing happens        
     end
 
 endmodule
@@ -67,7 +68,7 @@ endmodule
 module implement_count_up_and_display(
     input CLK100MHZ,
     input BTNR, // left button on Nexys4DDR
-    input [1:0] SW, // right button
+    input [1:0] SW, // switches, only using 0
     output [15:0] LED
     );
 
@@ -75,7 +76,7 @@ module implement_count_up_and_display(
     clk_50Hz d0( .incoming_CLK100MHZ(CLK100MHZ), .outgoing_CLK(CLK_50HZ));
     
     // set up a counter
-    count_button_push d1 ( .CLK_IN(CLK_50HZ), .button(BTNR), .clear(SW[1:0]), .sum_out(LED[15:0]));
+    count_button_push d1 ( .CLK_IN(CLK_50HZ), .button(BTNR), .clear(SW[0]), .sum_out(LED[15:0]));
 
-    endmodule
+endmodule
  
